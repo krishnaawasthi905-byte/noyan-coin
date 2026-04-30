@@ -36,7 +36,7 @@ class Blockchain:
         return new_block
 
 nyn = Blockchain()
-nyn.add_block({"from": "Aryan", "to": "World", "amount": 24000000})
+nyn.add_block({"from": "Founder", "to": "World", "amount": 24000000})
 
 HTML = """
 <!DOCTYPE html>
