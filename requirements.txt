@@ -1,4 +1,5 @@
 flask
 ecdsa
 cryptography
+sqlalchemy
 waitress
