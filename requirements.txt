@@ -3,3 +3,4 @@ ecdsa
 cryptography
 sqlalchemy
 waitress
+flask_limiter
