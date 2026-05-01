@@ -12,7 +12,11 @@ app = Flask(__name__)
 limiter = Limiter(get_remote_address, app=app, default_limits=["100 per day", "10 per minute"])
 
 # Database setup
-engine = create_engine('sqlite:///nyn_blockchain.db')
+import os
+database_url = os.environ.get("DATABASE_URL", "sqlite:///nyn_blockchain.db")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+engine = create_engine(database_url)
 Base = declarative_base()
 
 class BlockModel(Base):
