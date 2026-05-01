@@ -1,4 +1,6 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, request
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import hashlib
 import json
 import time
@@ -7,6 +9,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 app = Flask(__name__)
+limiter = Limiter(get_remote_address, app=app, default_limits=["100 per day", "10 per minute"])
 
 # Database setup
 engine = create_engine('sqlite:///nyn_blockchain.db')
@@ -114,6 +117,7 @@ def explorer():
 
 NYN_SECRET = os.environ.get("NYN_SECRET", "fallback")
 
+@limiter.limit("5 per minute")
 @app.route('/add/<secret>/<data>')
 def add(secret, data):
     if secret != NYN_SECRET:
