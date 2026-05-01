@@ -112,8 +112,12 @@ def explorer():
     chain = get_chain()
     return render_template_string(HTML, chain=chain, blocks=len(chain))
 
-@app.route('/add/<data>')
-def add(data):
+NYN_SECRET = "RepublicOfNowhere2026"
+
+@app.route('/add/<secret>/<data>')
+def add(secret, data):
+    if secret != NYN_SECRET:
+        return jsonify({"error": "Unauthorized! You are not the Founder."}), 403
     add_block({"data": data, "timestamp": time.time()})
     return jsonify({"message": "Block added!", "blocks": len(get_chain())})
 
