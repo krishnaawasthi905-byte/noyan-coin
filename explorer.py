@@ -112,7 +112,7 @@ def explorer():
     chain = get_chain()
     return render_template_string(HTML, chain=chain, blocks=len(chain))
 
-NYN_SECRET = "RepublicOfNowhere2026"
+NYN_SECRET = os.environ.get("NYN_SECRET", "fallback")
 
 @app.route('/add/<secret>/<data>')
 def add(secret, data):
