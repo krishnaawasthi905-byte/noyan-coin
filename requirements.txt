@@ -6,3 +6,4 @@ waitress
 flask_limiter
 psycopg2-binary
 flask-bcrypt
+requests
