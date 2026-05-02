@@ -112,11 +112,14 @@ def generate_referral_code():
 
 def send_otp_email(email, otp):
     try:
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_USER
-        msg['To'] = email
-        msg['Subject'] = "NYN Wallet - Your Verification Code"
-        body = f"""
+        import sendgrid
+        from sendgrid.helpers.mail import Mail
+        sg = sendgrid.SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+        message = Mail(
+            from_email=EMAIL_USER,
+            to_emails=email,
+            subject='NYN Wallet - Your Verification Code',
+            plain_text_content=f"""
 ⚡ NYN NoyanCoin Verification
 
 Your OTP code is: {otp}
@@ -124,15 +127,12 @@ Your OTP code is: {otp}
 This code expires in 10 minutes.
 
 Republic of Nowhere - Currency of Everywhere
-        """
-        msg.attach(MIMEText(body, 'plain'))
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASS)
-        server.sendmail(EMAIL_USER, email, msg.as_string())
-        server.quit()
+            """
+        )
+        sg.send(message)
         return True
-    except:
+    except Exception as e:
+        print(f"Email error: {e}")
         return False
 
 def verify_recaptcha(token):
