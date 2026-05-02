@@ -379,7 +379,7 @@ NAVBAR_GUEST = """
 """
 
 MAIN_HTML = """<!DOCTYPE html><html><head><title>NYN Explorer - NoyanCoin Blockchain</title>""" + STYLES + """</head><body>
-{{ navbar }}
+{{ navbar | safe }}
 <div class="hero">
   <div class="container">
     <h1>⚡ <span>NYN</span> Blockchain Explorer</h1>
