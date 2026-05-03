@@ -41,9 +41,9 @@ a:hover{text-decoration:underline;}
 .market-card .m-value.green{color:var(--green);}
 .market-card .m-value.orange{color:var(--orange);}
 .market-card .m-value.purple{color:var(--purple);}
-.blocks-visual{display:flex;gap:8px;overflow-x:auto;padding:16px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
-.block-vis{min-width:88px;height:88px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;text-align:center;padding:8px;}
-.block-vis:hover{transform:translateY(-6px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+.blocks-visual{display:flex;gap:8px;overflow-x:auto;padding:16px 0;scrollbar-width:thin;}
+.block-vis{min-width:88px;height:88px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.2s;text-align:center;padding:8px;}
+.block-vis:hover{transform:translateY(-6px);}
 .block-vis .bv-num{font-size:0.85em;font-weight:700;}
 .block-vis .bv-icon{font-size:1.4em;margin-bottom:2px;}
 .block-vis .bv-tx{font-size:0.65em;margin-top:2px;opacity:0.7;}
@@ -51,7 +51,7 @@ a:hover{text-decoration:underline;}
 .section-title{font-size:1em;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .block-row{display:grid;grid-template-columns:80px 1fr 1fr 100px;gap:16px;padding:14px 0;border-bottom:1px solid var(--border);align-items:center;font-size:0.875em;}
 .block-row:last-child{border-bottom:none;}
-.block-num-badge{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-weight:700;color:var(--green);text-align:center;font-family:monospace;font-size:0.9em;}
+.block-num-badge{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-weight:700;color:var(--green);text-align:center;font-family:monospace;}
 .hash-text{font-family:monospace;color:var(--orange);font-size:0.8em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .search-bar{display:flex;gap:8px;margin-bottom:24px;}
 .search-bar input{flex:1;padding:12px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95em;outline:none;transition:border-color 0.2s;}
@@ -68,6 +68,11 @@ a:hover{text-decoration:underline;}
 .input-wrap{position:relative;}
 .input-wrap input{padding-right:44px;}
 .eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text2);cursor:pointer;font-size:1em;padding:0;}
+.pwd-strength{height:4px;border-radius:2px;margin-top:6px;transition:all 0.3s;}
+.pwd-strength.weak{background:var(--red);width:33%;}
+.pwd-strength.medium{background:var(--yellow);width:66%;}
+.pwd-strength.strong{background:var(--green);width:100%;}
+.pwd-hint{font-size:0.75em;color:var(--text2);margin-top:4px;}
 .btn-full{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;margin-top:8px;transition:background 0.2s;}
 .btn-full:hover{background:var(--green2);}
 .btn-outline{width:100%;padding:12px;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:8px;font-size:1em;font-weight:500;cursor:pointer;margin-top:8px;transition:all 0.2s;}
@@ -91,6 +96,7 @@ a:hover{text-decoration:underline;}
 .badge.v{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid var(--green);}
 .badge.u{background:rgba(248,81,73,0.15);color:var(--red);border:1px solid var(--red);}
 .badge.pos{background:rgba(163,113,247,0.15);color:var(--purple);border:1px solid var(--purple);}
+.badge.twofa{background:rgba(88,166,255,0.15);color:var(--blue);border:1px solid var(--blue);}
 .balance-box{text-align:center;padding:24px;background:var(--bg);border-radius:12px;margin-bottom:16px;border:1px solid var(--border);}
 .bal-label{font-size:0.85em;color:var(--text2);margin-bottom:8px;}
 .bal-amount{font-size:2.8em;font-weight:700;color:var(--green);font-family:monospace;}
@@ -106,7 +112,7 @@ a:hover{text-decoration:underline;}
 .wsection h3{font-size:1em;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 .send-input{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.95em;outline:none;margin-bottom:10px;transition:border-color 0.2s;}
 .send-input:focus{border-color:var(--green);}
-.send-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.95em;transition:background 0.2s;}
+.send-btn{width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.95em;}
 .send-btn:hover{background:var(--green2);}
 .tx-preview-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;display:none;}
 .tx-preview-box.show{display:block;}
@@ -129,19 +135,21 @@ a:hover{text-decoration:underline;}
 .progress-bar{background:var(--bg);border-radius:4px;height:8px;margin-top:8px;overflow:hidden;}
 .progress-fill{background:var(--green);height:100%;border-radius:4px;transition:width 0.5s;}
 .stake-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
-.stake-stat{display:flex;justify-content:space-between;font-size:0.875em;padding:6px 0;border-bottom:1px solid var(--border);}
+.stake-stat{display:flex;justify-content:space-between;font-size:0.875em;padding:8px 0;border-bottom:1px solid var(--border);}
 .stake-stat:last-child{border-bottom:none;}
 .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
 .profile-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;}
 .pi-label{font-size:0.75em;color:var(--text2);margin-bottom:4px;}
 .pi-value{font-size:0.9em;font-weight:600;}
+.login-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:0.85em;}
+.login-row:last-child{border-bottom:none;}
 .settings-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px;}
 .settings-section h3{font-size:1em;font-weight:600;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
-.setting-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);}
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);}
 .setting-row:last-child{border-bottom:none;}
 .setting-label{font-size:0.9em;font-weight:500;}
 .setting-desc{font-size:0.78em;color:var(--text2);margin-top:2px;}
-.toggle{position:relative;display:inline-block;width:44px;height:24px;}
+.toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;}
 .toggle input{opacity:0;width:0;height:0;}
 .toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--bg3);border-radius:24px;transition:0.3s;border:1px solid var(--border);}
 .toggle-slider:before{position:absolute;content:"";height:18px;width:18px;left:2px;bottom:2px;background:var(--text2);border-radius:50%;transition:0.3s;}
@@ -150,21 +158,28 @@ a:hover{text-decoration:underline;}
 .select-styled{padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.875em;outline:none;cursor:pointer;}
 .select-styled:focus{border-color:var(--green);}
 .otp-input{font-size:2em;text-align:center;letter-spacing:12px;font-family:monospace;font-weight:700;}
+.security-score{display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
+.score-circle{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3em;font-weight:700;flex-shrink:0;}
+.score-low{background:rgba(248,81,73,0.15);border:2px solid var(--red);color:var(--red);}
+.score-mid{background:rgba(227,179,65,0.15);border:2px solid var(--yellow);color:var(--yellow);}
+.score-high{background:rgba(0,255,136,0.15);border:2px solid var(--green);color:var(--green);}
+.backup-code{font-family:monospace;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:0.9em;color:var(--green);display:inline-block;margin:4px;}
+.qr-2fa{background:white;padding:16px;border-radius:10px;display:flex;justify-content:center;margin:16px 0;}
+.network-status{display:inline-flex;align-items:center;gap:6px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:20px;padding:4px 12px;font-size:0.8em;color:var(--green);}
+.pulse{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .footer{background:var(--bg2);border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--text2);font-size:0.85em;margin-top:40px;}
 .footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;max-width:800px;margin:0 auto 24px;}
 .footer-col h4{color:var(--text);margin-bottom:10px;font-size:0.9em;}
 .footer-col a{display:block;color:var(--text2);font-size:0.85em;margin-bottom:6px;}
 .footer-col a:hover{color:var(--green);text-decoration:none;}
-.network-status{display:inline-flex;align-items:center;gap:6px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:20px;padding:4px 12px;font-size:0.8em;color:var(--green);}
-.pulse{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-@media(max-width:600px){.hero h1{font-size:1.8em;}.stats-grid{grid-template-columns:repeat(2,1fr);}.profile-grid{grid-template-columns:1fr;}.block-row{grid-template-columns:60px 1fr;}.block-row .hash-text:last-child,.block-row div:last-child{display:none;}}
+@media(max-width:600px){.hero h1{font-size:1.8em;}.stats-grid{grid-template-columns:repeat(2,1fr);}.profile-grid{grid-template-columns:1fr;}.block-row{grid-template-columns:60px 1fr;}}
 </style>
 <script>
 function toggleTheme(){document.body.classList.toggle('light');localStorage.setItem('nyn_theme',document.body.classList.contains('light')?'light':'dark');}
 function togglePwd(id){var i=document.getElementById(id);i.type=i.type==='password'?'text':'password';}
-function applyTheme(t){if(t==='light')document.body.classList.add('light');else document.body.classList.remove('light');}
-window.onload=function(){var t=localStorage.getItem('nyn_theme')||'dark';applyTheme(t);}
+function checkPwd(val){var s=document.getElementById('pwd-strength');var h=document.getElementById('pwd-hint');if(!s)return;var score=0;if(val.length>=8)score++;if(val.length>=12)score++;if(/[A-Z]/.test(val))score++;if(/[a-z]/.test(val))score++;if(/\d/.test(val))score++;if(/[!@#$%^&*]/.test(val))score++;if(score<=2){s.className='pwd-strength weak';if(h)h.textContent='Weak password';}else if(score<=4){s.className='pwd-strength medium';if(h)h.textContent='Medium strength';}else{s.className='pwd-strength strong';if(h)h.textContent='Strong password ✓';}}
+window.onload=function(){var t=localStorage.getItem('nyn_theme')||'dark';if(t==='light')document.body.classList.add('light');}
 </script>
 """
 
@@ -199,11 +214,12 @@ FOOTER = """
     <div class="footer-grid">
       <div class="footer-col"><h4>NYN NoyanCoin</h4><a href="/">Explorer</a><a href="/register">Create Wallet</a><a href="/login">Login</a></div>
       <div class="footer-col"><h4>Network</h4><a href="#">Whitepaper</a><a href="#">GitHub</a><a href="#">@OfficiaNowhere</a></div>
-      <div class="footer-col"><h4>Info</h4><a href="#">About NYN</a><a href="#">Privacy</a><a href="#">Security</a></div>
+      <div class="footer-col"><h4>Security</h4><a href="/settings">2FA Setup</a><a href="/settings">TX PIN</a><a href="/profile">Login History</a></div>
+      <div class="footer-col"><h4>Info</h4><a href="#">About NYN</a><a href="#">Privacy</a><a href="#">Contact</a></div>
     </div>
-    <div style="margin-bottom:12px;"><span class="network-status"><span class="pulse"></span> Network Active</span></div>
+    <div style="margin-bottom:12px;"><span class="network-status"><span class="pulse"></span> NYN Network Active</span></div>
     <p>⚡ NYN NoyanCoin — Republic of Nowhere — Currency of Everywhere</p>
-    <p style="margin-top:6px;">Balance privacy enabled • Human verified • Proof of Stake consensus</p>
+    <p style="margin-top:6px;">Balance privacy • Human verified • Proof of Stake • 2FA Security</p>
   </div>
 </div>
 """
@@ -226,14 +242,13 @@ MAIN_HTML = """<!DOCTYPE html><html><head><title>NYN Explorer - NoyanCoin Blockc
   <div class="stats-grid">
     <div class="stat-card"><div class="val">{{ blocks }}</div><div class="lbl">Total Blocks</div></div>
     <div class="stat-card"><div class="val">24M</div><div class="lbl">Max Supply</div></div>
-    <div class="stat-card"><div class="val">{{ circulating }}</div><div class="lbl">Circulating Supply</div></div>
-    <div class="stat-card"><div class="val">{{ users }}</div><div class="lbl">Total Wallets</div></div>
+    <div class="stat-card"><div class="val">{{ circulating }}</div><div class="lbl">Circulating</div></div>
+    <div class="stat-card"><div class="val">{{ users }}</div><div class="lbl">Wallets</div></div>
     <div class="stat-card"><div class="val">{{ txns }}</div><div class="lbl">Transactions</div></div>
-    <div class="stat-card"><div class="val">{{ total_staked }} NYN</div><div class="lbl">Total Staked</div></div>
+    <div class="stat-card"><div class="val">{{ total_staked }}</div><div class="lbl">Total Staked</div></div>
     <div class="stat-card"><div class="val">~2s</div><div class="lbl">Block Time</div></div>
     <div class="stat-card"><div class="val">PoS</div><div class="lbl">Consensus</div></div>
   </div>
-
   <div class="section-card">
     <div class="section-title">📊 Market Info</div>
     <div class="market-grid">
@@ -242,12 +257,11 @@ MAIN_HTML = """<!DOCTYPE html><html><head><title>NYN Explorer - NoyanCoin Blockc
       <div class="market-card"><div class="m-label">Genesis Block</div><div class="m-value">{{ genesis_date }}</div></div>
       <div class="market-card"><div class="m-label">Consensus</div><div class="m-value green">PoS Active ✓</div></div>
       <div class="market-card"><div class="m-label">Privacy</div><div class="m-value green">Balance Hidden ✓</div></div>
-      <div class="market-card"><div class="m-label">Human Verified</div><div class="m-value green">Required ✓</div></div>
+      <div class="market-card"><div class="m-label">Security</div><div class="m-value green">2FA + TX PIN ✓</div></div>
       <div class="market-card"><div class="m-label">Min Stake</div><div class="m-value">10 NYN</div></div>
       <div class="market-card"><div class="m-label">Network</div><div class="m-value orange">Testnet</div></div>
     </div>
   </div>
-
   <div class="section-card">
     <div class="section-title">🔲 Block Visualization</div>
     <div class="blocks-visual">
@@ -262,7 +276,6 @@ MAIN_HTML = """<!DOCTYPE html><html><head><title>NYN Explorer - NoyanCoin Blockc
       {% endfor %}
     </div>
   </div>
-
   <div class="section-card" id="blocks">
     <div class="section-title">📦 Latest Blocks</div>
     <div class="search-bar">
@@ -274,37 +287,30 @@ MAIN_HTML = """<!DOCTYPE html><html><head><title>NYN Explorer - NoyanCoin Blockc
     {% set color = colors[block.index % 8] %}
     <div class="block-row" id="block-{{ block.index }}">
       <div><span class="block-num-badge" style="color:{{ color }};border-color:{{ color }}40;">#{{ block.index }}</span></div>
-      <div>
-        <div class="hash-text">🔗 {{ block.hash }}</div>
-        <div style="font-size:0.72em;color:var(--text2);margin-top:3px;font-family:monospace;">◀ {{ block.previous_hash[:40] }}...</div>
-      </div>
+      <div><div class="hash-text">🔗 {{ block.hash }}</div><div style="font-size:0.72em;color:var(--text2);margin-top:3px;font-family:monospace;">◀ {{ block.previous_hash[:40] }}...</div></div>
       <div class="hash-text" style="color:var(--text2);font-size:0.78em;">{{ block.transactions[:55] }}...</div>
-      <div style="font-size:0.8em;color:var(--text2);">
-        <div>🔏 {{ block.validator[:14] if block.validator else 'System' }}</div>
-        <div style="margin-top:3px;color:var(--purple);">{{ block.tx_count }} tx</div>
-      </div>
+      <div style="font-size:0.8em;color:var(--text2);"><div>🔏 {{ block.validator[:14] if block.validator else 'System' }}</div><div style="margin-top:3px;color:var(--purple);">{{ block.tx_count }} tx</div></div>
     </div>
     {% endfor %}
   </div>
 </div>
-""" + FOOTER + """
-</body></html>
-"""
+""" + FOOTER + """</body></html>"""
 
 REGISTER_HTML = """<!DOCTYPE html><html><head><title>Create Wallet - NYN</title>""" + STYLES + """
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head><body>""" + NAV_OUT + """
-<div class="form-page">
-<div class="form-card">
+<div class="form-page"><div class="form-card">
   <h2>Create Your Wallet</h2>
   <p class="sub">Join the Republic of Nowhere</p>
-  <div class="bonus-badge">🎁 50 NYN free on signup • Earn 20 NYN per referral (max 3)</div>
+  <div class="bonus-badge">🎁 50 NYN free • Earn 20 NYN per referral (max 3)</div>
   {% if msg %}<div class="alert {{ msg_type }}">{{ msg }}</div>{% endif %}
   <form method="POST">
     <div class="fg"><label>Username</label><input type="text" name="username" placeholder="Choose a username" required maxlength="30" autocomplete="off"></div>
     <div class="fg"><label>Email</label><input type="email" name="email" placeholder="your@email.com" required></div>
     <div class="fg"><label>Password</label>
-      <div class="input-wrap"><input type="password" name="password" id="p1" placeholder="Min 8 characters" required minlength="8"><button type="button" class="eye-btn" onclick="togglePwd('p1')">👁</button></div>
+      <div class="input-wrap"><input type="password" name="password" id="p1" placeholder="Min 8 chars, use uppercase, numbers, symbols" required minlength="8" oninput="checkPwd(this.value)"><button type="button" class="eye-btn" onclick="togglePwd('p1')">👁</button></div>
+      <div class="pwd-strength" id="pwd-strength"></div>
+      <div class="pwd-hint" id="pwd-hint"></div>
     </div>
     <div class="fg"><label>Confirm Password</label>
       <div class="input-wrap"><input type="password" name="confirm" id="p2" placeholder="Repeat password" required><button type="button" class="eye-btn" onclick="togglePwd('p2')">👁</button></div>
@@ -314,49 +320,45 @@ REGISTER_HTML = """<!DOCTYPE html><html><head><title>Create Wallet - NYN</title>
     <button type="submit" class="btn-full">Create Wallet & Get 50 NYN ⚡</button>
   </form>
   <div class="form-footer">Already have a wallet? <a href="/login">Login here</a></div>
-</div>
-</div>""" + FOOTER + """</body></html>"""
+</div></div>""" + FOOTER + """</body></html>"""
 
 LOGIN_HTML = """<!DOCTYPE html><html><head><title>Login - NYN</title>""" + STYLES + """</head><body>""" + NAV_OUT + """
-<div class="form-page">
-<div class="form-card">
+<div class="form-page"><div class="form-card">
   <h2>Welcome Back</h2>
   <p class="sub">Login to your NYN wallet</p>
   {% if msg %}<div class="alert error">{{ msg }}</div>{% endif %}
+  {% if attempts is not none and attempts < 5 %}<div class="alert warning">⚠️ {{ attempts }} login attempts remaining before lockout</div>{% endif %}
   <form method="POST">
-    <div class="fg"><label>Username</label><input type="text" name="username" placeholder="Your username" required autocomplete="username"></div>
+    <div class="fg"><label>Username</label><input type="text" name="username" {% if username %}value="{{ username }}"{% endif %} placeholder="Your username" required autocomplete="username"></div>
     <div class="fg"><label>Password</label>
       <div class="input-wrap"><input type="password" name="password" id="lp" placeholder="Your password" required autocomplete="current-password"><button type="button" class="eye-btn" onclick="togglePwd('lp')">👁</button></div>
     </div>
+    {% if show_2fa %}<div class="fg"><label>2FA Code</label><input type="text" name="two_fa_code" placeholder="6-digit authenticator code" maxlength="6" autocomplete="off"></div>{% endif %}
     <button type="submit" class="btn-full">Login ⚡</button>
   </form>
   <div class="form-footer">No wallet yet? <a href="/register">Create one free</a></div>
-</div>
-</div>""" + FOOTER + """</body></html>"""
+</div></div>""" + FOOTER + """</body></html>"""
 
 VERIFY_HTML = """<!DOCTYPE html><html><head><title>Verify Email - NYN</title>""" + STYLES + """</head><body>
 <nav class="navbar"><a href="/" class="navbar-brand">⚡ NYN <span>NoyanCoin</span></a><div class="navbar-links"><button class="theme-btn" onclick="toggleTheme()">🌙</button></div></nav>
-<div class="form-page">
-<div class="form-card">
+<div class="form-page"><div class="form-card">
   <h2>Verify Your Email</h2>
   <p class="sub">Enter the 6-digit code sent to your inbox</p>
   <div class="alert info">📧 Check your inbox AND spam/junk folder</div>
-  <div class="alert warning">⚠️ If in spam, mark as "Not Spam" to receive future emails</div>
+  <div class="alert warning">⚠️ If in spam, mark as "Not Spam"</div>
   {% if msg %}<div class="alert error">{{ msg }}</div>{% endif %}
   <form method="POST">
     <div class="fg"><label>Verification Code</label><input type="text" name="otp" class="otp-input" placeholder="000000" maxlength="6" required autocomplete="off" autofocus></div>
     <button type="submit" class="btn-full">Verify & Activate Wallet ⚡</button>
   </form>
   <div class="form-footer"><a href="/resend-otp">Resend verification code</a></div>
-</div>
-</div></body></html>"""
+</div></div></body></html>"""
 
 WALLET_HTML = """<!DOCTYPE html><html><head><title>My Wallet - NYN</title>""" + STYLES + """
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head><body>""" + NAV_IN + """
 <div class="page-wrap">
   {% if msg %}<div class="alert {{ msg_type }}" style="margin-bottom:16px;">{{ msg }}</div>{% endif %}
-
   <div class="wallet-header">
     <div class="user-row">
       <div class="avatar">{{ user.username[0].upper() }}</div>
@@ -364,18 +366,17 @@ WALLET_HTML = """<!DOCTYPE html><html><head><title>My Wallet - NYN</title>""" + 
         <div class="uname">{{ user.username }}
           <span class="badge {{ 'v' if user.is_verified else 'u' }}">{{ '✓ Verified' if user.is_verified else '✗ Unverified' }}</span>
           {% if user.staked_amount >= 10 %}<span class="badge pos">⛏ Validator</span>{% endif %}
+          {% if user.two_fa_enabled %}<span class="badge twofa">🔐 2FA</span>{% endif %}
         </div>
         <div style="font-size:0.85em;color:var(--text2);">Member since {{ created_at }}</div>
       </div>
     </div>
-
     <div class="balance-box">
       <div class="bal-label">Your Balance (Private)</div>
       <div id="bal" class="bal-dots">••••••</div>
       <button class="show-btn" onclick="toggleBal()">👁 Show / Hide Balance</button>
-      <div class="privacy-note">🔒 Your balance is private by default. Only you can reveal it.</div>
+      <div class="privacy-note">🔒 Your balance is private. Only you can reveal it.</div>
     </div>
-
     <div style="margin-top:16px;">
       <div style="font-size:0.85em;color:var(--text2);margin-bottom:6px;">NYN Wallet Address</div>
       <div class="addr-box">{{ user.wallet_address }}</div>
@@ -394,40 +395,43 @@ WALLET_HTML = """<!DOCTYPE html><html><head><title>My Wallet - NYN</title>""" + 
 
   <div class="wsection">
     <h3>💸 Send NYN</h3>
-    <div class="alert info" style="margin-bottom:12px;">🔐 All transactions are verified by PoS consensus before confirmation. Zero fees.</div>
-    <input type="text" class="send-input" id="recv" placeholder="Receiver NYN wallet address (starts with NYN...)" oninput="preview()">
-    <input type="number" class="send-input" id="amt" placeholder="Amount in NYN (max 10,000 per transaction)" step="0.01" min="0.01" max="10000" oninput="preview()">
+    <div class="alert info" style="margin-bottom:12px;">🔐 PoS verified • Zero fees • 30s cooldown between transactions</div>
+    <input type="text" class="send-input" id="recv" placeholder="Receiver NYN wallet address (NYN...)" oninput="preview()">
+    <input type="number" class="send-input" id="amt" placeholder="Amount in NYN (max 10,000 per tx)" step="0.01" min="0.01" max="10000" oninput="preview()">
+    {% if user.tx_pin_enabled %}<input type="password" class="send-input" id="txpin" placeholder="Enter your 6-digit transaction PIN">{% endif %}
     <div class="tx-preview-box" id="prev-box">
-      <div style="font-size:0.875em;font-weight:600;margin-bottom:10px;color:var(--text);">📋 Transaction Preview</div>
+      <div style="font-size:0.875em;font-weight:600;margin-bottom:10px;">📋 Transaction Preview</div>
       <div class="tx-row"><span style="color:var(--text2);">From</span><span style="font-family:monospace;font-size:0.8em;">{{ user.wallet_address[:24] }}...</span></div>
       <div class="tx-row"><span style="color:var(--text2);">To</span><span id="p-to" style="font-family:monospace;font-size:0.8em;">-</span></div>
       <div class="tx-row"><span style="color:var(--text2);">Amount</span><span id="p-amt" style="color:var(--green);font-weight:700;">-</span></div>
-      <div class="tx-row"><span style="color:var(--text2);">Network Fee</span><span style="color:var(--green);">0 NYN (Free)</span></div>
+      <div class="tx-row"><span style="color:var(--text2);">Fee</span><span style="color:var(--green);">0 NYN (Free)</span></div>
       <div class="tx-row"><span style="color:var(--text2);">Consensus</span><span style="color:var(--purple);">Proof of Stake ✓</span></div>
-      <div class="tx-row"><span style="color:var(--text2);">Status</span><span style="color:var(--green);">Ready</span></div>
+      <div class="tx-row"><span style="color:var(--text2);">Daily Limit</span><span style="color:var(--text2);">50,000 NYN/day</span></div>
     </div>
     <form method="POST" action="/send" id="sf">
       <input type="hidden" name="receiver" id="rh">
       <input type="hidden" name="amount" id="ah">
+      <input type="hidden" name="tx_pin" id="ph">
       <button type="button" class="send-btn" onclick="doSend()">Confirm & Send NYN ⚡</button>
     </form>
   </div>
 
   <div class="wsection">
     <h3>⛏ Staking — Become a Validator</h3>
-    <div class="alert info" style="margin-bottom:12px;">Stake NYN to become a validator and earn 0.1 NYN reward per block validated. Minimum 10 NYN to stake.</div>
+    <div class="alert info" style="margin-bottom:12px;">Stake NYN to earn 0.1 NYN per block validated. Min 10 NYN. 24hr lock period.</div>
     {% if stake_info %}
     <div class="stake-box">
+      <div class="stake-stat"><span style="color:var(--text2);">Staked Since</span><span>{{ stake_info.staked_at }}</span></div>
       <div class="stake-stat"><span style="color:var(--text2);">Staked Amount</span><span style="color:var(--green);font-weight:700;">{{ stake_info.amount }} NYN</span></div>
       <div class="stake-stat"><span style="color:var(--text2);">Rewards Earned</span><span style="color:var(--yellow);">{{ stake_info.rewards }} NYN</span></div>
-      <div class="stake-stat"><span style="color:var(--text2);">Status</span><span style="color:var(--green);">Active Validator ✓</span></div>
-      <div class="stake-stat"><span style="color:var(--text2);">Blocks Validated</span><span>{{ user.blocks_validated }}</span></div>
+      <div class="stake-stat"><span style="color:var(--text2);">Blocks Validated</span><span style="color:var(--purple);">{{ user.blocks_validated }}</span></div>
+      <div class="stake-stat"><span style="color:var(--text2);">Status</span><span style="color:var(--green);">✓ Active Validator</span></div>
     </div>
-    <form method="POST" action="/unstake"><button type="submit" class="btn-danger">Unstake NYN</button></form>
+    <form method="POST" action="/unstake"><button type="submit" class="btn-danger">Unstake NYN (after 24hr lock)</button></form>
     {% else %}
     <form method="POST" action="/stake">
       <input type="number" name="amount" class="send-input" placeholder="Amount to stake (min 10 NYN)" min="10" step="0.01" required>
-      <button type="submit" class="send-btn" style="background:var(--purple);border-color:var(--purple);">Stake NYN & Become Validator ⛏</button>
+      <button type="submit" class="send-btn" style="background:var(--purple);">Stake NYN & Become Validator ⛏</button>
     </form>
     {% endif %}
   </div>
@@ -458,7 +462,22 @@ WALLET_HTML = """<!DOCTYPE html><html><head><title>My Wallet - NYN</title>""" + 
     </div>
     {% endfor %}
     {% else %}
-    <p style="color:var(--text2);text-align:center;padding:20px 0;font-size:0.9em;">No transactions yet. Send or receive NYN to see history.</p>
+    <p style="color:var(--text2);text-align:center;padding:20px 0;">No transactions yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="wsection">
+    <h3>🔐 Recent Logins</h3>
+    {% if logins %}
+    {% for l in logins %}
+    <div class="login-row">
+      <span style="font-family:monospace;font-size:0.85em;color:var(--text2);">{{ l.ip }}</span>
+      <span style="font-size:0.85em;color:var(--text2);">{{ l.time }}</span>
+      <span style="color:{{ 'var(--green)' if l.success else 'var(--red)' }};font-size:0.8em;">{{ '✓ Success' if l.success else '✗ Failed' }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--text2);font-size:0.9em;">No login history yet.</p>
     {% endif %}
   </div>
 </div>
@@ -466,8 +485,8 @@ WALLET_HTML = """<!DOCTYPE html><html><head><title>My Wallet - NYN</title>""" + 
 <script>
 var bv=false,rb="{{ user.balance }} NYN";
 function toggleBal(){bv=!bv;var e=document.getElementById('bal');e.className=bv?'bal-amount':'bal-dots';e.textContent=bv?rb:'••••••';}
-function preview(){var r=document.getElementById('recv').value,a=document.getElementById('amt').value,b=document.getElementById('prev-box');if(r.length>5&&a>0){document.getElementById('p-to').textContent=r.substring(0,24)+'...';document.getElementById('p-amt').textContent=a+' NYN';b.classList.add('show');}else{b.classList.remove('show');}}
-function doSend(){var r=document.getElementById('recv').value,a=document.getElementById('amt').value;if(!r||!a){alert('Fill in receiver and amount');return;}if(!r.startsWith('NYN')){alert('Invalid NYN address - must start with NYN');return;}if(parseFloat(a)>10000){alert('Max 10,000 NYN per transaction');return;}if(confirm('Send '+a+' NYN to '+r.substring(0,20)+'...?')){document.getElementById('rh').value=r;document.getElementById('ah').value=a;document.getElementById('sf').submit();}}
+function preview(){var r=document.getElementById('recv').value,a=document.getElementById('amt').value,b=document.getElementById('prev-box');if(r.length>5&&a>0){document.getElementById('p-to').textContent=r.substring(0,24)+'...';document.getElementById('p-amt').textContent=a+' NYN';b.classList.add('show');}else b.classList.remove('show');}
+function doSend(){var r=document.getElementById('recv').value,a=document.getElementById('amt').value;if(!r||!a){alert('Fill receiver and amount');return;}if(!r.startsWith('NYN')){alert('Invalid NYN address');return;}if(r.length!==35){alert('Invalid NYN address length');return;}if(parseFloat(a)>10000){alert('Max 10,000 NYN per tx');return;}{% if user.tx_pin_enabled %}var p=document.getElementById('txpin').value;if(!p||p.length!==6){alert('Enter your 6-digit TX PIN');return;}document.getElementById('ph').value=p;{% endif %}if(confirm('Send '+a+' NYN to '+r.substring(0,20)+'...?')){document.getElementById('rh').value=r;document.getElementById('ah').value=a;document.getElementById('sf').submit();}}
 new QRCode(document.getElementById("qrcode"),{text:"{{ user.wallet_address }}",width:128,height:128,colorDark:"#000000",colorLight:"#ffffff"});
 </script>
 </body></html>"""
@@ -482,6 +501,7 @@ PROFILE_HTML = """<!DOCTYPE html><html><head><title>Profile - NYN</title>""" + S
       <div>
         <div class="uname">{{ user.username }}
           <span class="badge {{ 'v' if user.is_verified else 'u' }}">{{ '✓ Verified' if user.is_verified else '✗ Unverified' }}</span>
+          {% if user.two_fa_enabled %}<span class="badge twofa">🔐 2FA Active</span>{% endif %}
         </div>
         <div style="color:var(--text2);font-size:0.85em;">{{ user.email }}</div>
         <div style="color:var(--text2);font-size:0.85em;">Member since {{ created_at }}</div>
@@ -491,15 +511,30 @@ PROFILE_HTML = """<!DOCTYPE html><html><head><title>Profile - NYN</title>""" + S
       <div class="profile-item"><div class="pi-label">Total Sent</div><div class="pi-value" style="color:var(--red);">{{ user.total_sent|round(2) }} NYN</div></div>
       <div class="profile-item"><div class="pi-label">Total Received</div><div class="pi-value" style="color:var(--green);">{{ user.total_received|round(2) }} NYN</div></div>
       <div class="profile-item"><div class="pi-label">Blocks Validated</div><div class="pi-value" style="color:var(--purple);">{{ user.blocks_validated }}</div></div>
-      <div class="profile-item"><div class="pi-label">Referrals Made</div><div class="pi-value">{{ user.referral_count }}/3</div></div>
-      <div class="profile-item"><div class="pi-label">Staked Amount</div><div class="pi-value" style="color:var(--yellow);">{{ user.staked_amount }} NYN</div></div>
-      <div class="profile-item"><div class="pi-label">Network</div><div class="pi-value">NYN Testnet</div></div>
+      <div class="profile-item"><div class="pi-label">Referrals</div><div class="pi-value">{{ user.referral_count }}/3</div></div>
+      <div class="profile-item"><div class="pi-label">Staked</div><div class="pi-value" style="color:var(--yellow);">{{ user.staked_amount }} NYN</div></div>
+      <div class="profile-item"><div class="pi-label">Login Count</div><div class="pi-value">{{ user.login_count }}</div></div>
     </div>
   </div>
+
+  <div class="wsection">
+    <h3>🔐 Login History</h3>
+    {% if logins %}
+    {% for l in logins %}
+    <div class="login-row">
+      <span style="font-family:monospace;font-size:0.85em;">{{ l.ip }}</span>
+      <span style="font-size:0.85em;color:var(--text2);">{{ l.time }}</span>
+      <span style="color:{{ 'var(--green)' if l.success else 'var(--red)' }};font-size:0.8em;">{{ '✓ Success' if l.success else '✗ Failed' }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:var(--text2);">No login history yet.</p>
+    {% endif %}
+  </div>
+
   <div class="wsection" style="border-color:var(--red);">
     <h3 style="color:var(--red);">⚠️ Danger Zone</h3>
-    <p style="color:var(--text2);font-size:0.85em;margin-bottom:12px;">Account deletion is permanent and irreversible.</p>
-    <button onclick="alert('Account deletion coming soon. Contact support on @OfficiaNowhere')" class="btn-danger">Delete Account</button>
+    <button onclick="alert('Contact support on @OfficiaNowhere')" class="btn-danger">Delete Account</button>
   </div>
 </div>""" + FOOTER + """</body></html>"""
 
@@ -507,22 +542,29 @@ SETTINGS_HTML = """<!DOCTYPE html><html><head><title>Settings - NYN</title>""" +
 <div class="page-wrap">
   {% if msg %}<div class="alert {{ msg_type }}" style="margin-bottom:16px;">{{ msg }}</div>{% endif %}
 
+  {% set sec_score = (1 if user.is_verified else 0) + (2 if user.two_fa_enabled else 0) + (1 if user.tx_pin_enabled else 0) + (1 if user.notif_security else 0) %}
+  <div class="security-score">
+    <div class="score-circle {{ 'score-high' if sec_score >= 4 else 'score-mid' if sec_score >= 2 else 'score-low' }}">{{ sec_score }}/5</div>
+    <div>
+      <div style="font-weight:600;margin-bottom:4px;">Security Score</div>
+      <div style="font-size:0.85em;color:var(--text2);">{{ 'Excellent! Your account is well protected.' if sec_score >= 4 else 'Good. Enable 2FA and TX PIN for better security.' if sec_score >= 2 else 'Low. Please enable security features.' }}</div>
+    </div>
+  </div>
+
   <div class="settings-section">
     <h3>🎨 Appearance</h3>
-    <form method="POST">
-      <input type="hidden" name="action" value="theme">
+    <form method="POST"><input type="hidden" name="action" value="theme">
       <div class="setting-row">
-        <div><div class="setting-label">Theme</div><div class="setting-desc">Choose your preferred color scheme</div></div>
-        <select name="theme" class="select-styled" onchange="this.form.submit();applyTheme(this.value);localStorage.setItem('nyn_theme',this.value)">
+        <div><div class="setting-label">Theme</div><div class="setting-desc">Choose your color scheme</div></div>
+        <select name="theme" class="select-styled" onchange="this.form.submit();localStorage.setItem('nyn_theme',this.value);">
           <option value="dark" {{ 'selected' if user.theme == 'dark' else '' }}>🌙 Dark</option>
           <option value="light" {{ 'selected' if user.theme == 'light' else '' }}>☀️ Light</option>
         </select>
       </div>
     </form>
-    <form method="POST">
-      <input type="hidden" name="action" value="language">
+    <form method="POST"><input type="hidden" name="action" value="language">
       <div class="setting-row">
-        <div><div class="setting-label">Language</div><div class="setting-desc">Select your preferred language</div></div>
+        <div><div class="setting-label">Language</div><div class="setting-desc">Select your language</div></div>
         <select name="language" class="select-styled" onchange="this.form.submit()">
           <option value="en" {{ 'selected' if user.language == 'en' else '' }}>🇬🇧 English</option>
           <option value="hi" {{ 'selected' if user.language == 'hi' else '' }}>🇮🇳 Hindi</option>
@@ -532,15 +574,43 @@ SETTINGS_HTML = """<!DOCTYPE html><html><head><title>Settings - NYN</title>""" +
   </div>
 
   <div class="settings-section">
+    <h3>🔐 Two-Factor Authentication (2FA)</h3>
+    {% if user.two_fa_enabled %}
+    <div class="alert success" style="margin-bottom:16px;">✓ 2FA is active. Your account is protected by Google Authenticator.</div>
+    <form method="POST" action="/disable-2fa">
+      <div class="fg"><label>Enter Password to Disable 2FA</label>
+        <div class="input-wrap"><input type="password" name="password" id="d2fa" placeholder="Current password" required><button type="button" class="eye-btn" onclick="togglePwd('d2fa')">👁</button></div>
+      </div>
+      <button type="submit" class="btn-danger">Disable 2FA</button>
+    </form>
+    {% else %}
+    <div class="alert warning" style="margin-bottom:16px;">⚠️ 2FA is not enabled. Enable it to protect your account.</div>
+    <a href="/setup-2fa" class="btn-full" style="display:block;text-align:center;text-decoration:none;padding:12px;background:var(--blue);color:#fff;border-radius:8px;font-weight:600;">Enable 2FA with Google Authenticator 🔐</a>
+    {% endif %}
+  </div>
+
+  <div class="settings-section">
+    <h3>💸 Transaction PIN</h3>
+    {% if user.tx_pin_enabled %}
+    <div class="alert success" style="margin-bottom:16px;">✓ Transaction PIN is active. Required for all transfers.</div>
+    {% else %}
+    <div class="alert warning" style="margin-bottom:16px;">⚠️ No transaction PIN set. Add one for extra transfer security.</div>
+    {% endif %}
+    <form method="POST" action="/set-tx-pin">
+      <div class="fg"><label>Set 6-Digit Transaction PIN</label><input type="password" name="tx_pin" placeholder="Enter 6-digit PIN" maxlength="6" pattern="[0-9]{6}" required></div>
+      <button type="submit" class="btn-full">Set Transaction PIN</button>
+    </form>
+  </div>
+
+  <div class="settings-section">
     <h3>🔔 Notifications</h3>
-    <form method="POST">
-      <input type="hidden" name="action" value="notifications">
+    <form method="POST"><input type="hidden" name="action" value="notifications">
       <div class="setting-row">
-        <div><div class="setting-label">Transaction Alerts</div><div class="setting-desc">Get notified when you send or receive NYN</div></div>
+        <div><div class="setting-label">Transaction Alerts</div><div class="setting-desc">Email when NYN is sent or received</div></div>
         <label class="toggle"><input type="checkbox" name="notif_tx" {{ 'checked' if user.notif_tx else '' }} onchange="this.form.submit()"><span class="toggle-slider"></span></label>
       </div>
       <div class="setting-row">
-        <div><div class="setting-label">Security Alerts</div><div class="setting-desc">Get notified about login attempts and security events</div></div>
+        <div><div class="setting-label">Security Alerts</div><div class="setting-desc">Email on new logins and security events</div></div>
         <label class="toggle"><input type="checkbox" name="notif_security" {{ 'checked' if user.notif_security else '' }} onchange="this.form.submit()"><span class="toggle-slider"></span></label>
       </div>
     </form>
@@ -548,27 +618,28 @@ SETTINGS_HTML = """<!DOCTYPE html><html><head><title>Settings - NYN</title>""" +
 
   <div class="settings-section">
     <h3>🔒 Privacy</h3>
-    <form method="POST">
-      <input type="hidden" name="action" value="privacy">
+    <form method="POST"><input type="hidden" name="action" value="privacy">
       <div class="setting-row">
-        <div><div class="setting-label">Hide Balance by Default</div><div class="setting-desc">Your balance will be hidden when you open wallet</div></div>
+        <div><div class="setting-label">Hide Balance by Default</div><div class="setting-desc">Balance hidden when you open wallet</div></div>
         <label class="toggle"><input type="checkbox" name="privacy_hide_balance" {{ 'checked' if user.privacy_hide_balance else '' }} onchange="this.form.submit()"><span class="toggle-slider"></span></label>
       </div>
       <div class="setting-row">
-        <div><div class="setting-label">Hide Transaction History</div><div class="setting-desc">Your transactions will be hidden by default</div></div>
+        <div><div class="setting-label">Hide Transaction History</div><div class="setting-desc">Transactions hidden by default</div></div>
         <label class="toggle"><input type="checkbox" name="privacy_hide_txs" {{ 'checked' if user.privacy_hide_txs else '' }} onchange="this.form.submit()"><span class="toggle-slider"></span></label>
       </div>
     </form>
   </div>
 
   <div class="settings-section">
-    <h3>🛡️ Security — Change Password</h3>
+    <h3>🛡️ Change Password</h3>
     <form method="POST" action="/change-password">
       <div class="fg"><label>Current Password</label>
         <div class="input-wrap"><input type="password" name="current_password" id="cp1" placeholder="Current password" required><button type="button" class="eye-btn" onclick="togglePwd('cp1')">👁</button></div>
       </div>
       <div class="fg"><label>New Password</label>
-        <div class="input-wrap"><input type="password" name="new_password" id="cp2" placeholder="New password (min 8 chars)" required minlength="8"><button type="button" class="eye-btn" onclick="togglePwd('cp2')">👁</button></div>
+        <div class="input-wrap"><input type="password" name="new_password" id="cp2" placeholder="New password" required minlength="8" oninput="checkPwd(this.value)"><button type="button" class="eye-btn" onclick="togglePwd('cp2')">👁</button></div>
+        <div class="pwd-strength" id="pwd-strength"></div>
+        <div class="pwd-hint" id="pwd-hint"></div>
       </div>
       <div class="fg"><label>Confirm New Password</label>
         <div class="input-wrap"><input type="password" name="confirm_password" id="cp3" placeholder="Confirm new password" required><button type="button" class="eye-btn" onclick="togglePwd('cp3')">👁</button></div>
@@ -581,16 +652,49 @@ SETTINGS_HTML = """<!DOCTYPE html><html><head><title>Settings - NYN</title>""" +
     <h3>💳 Wallet Info</h3>
     <div class="setting-row">
       <div><div class="setting-label">Wallet Address</div><div class="setting-desc" style="font-family:monospace;color:var(--orange);">{{ user.wallet_address[:24] }}...</div></div>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('{{ user.wallet_address }}');this.textContent='✓ Copied!'">📋 Copy</button>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('{{ user.wallet_address }}');this.textContent='✓'">📋</button>
     </div>
     <div class="setting-row">
-      <div><div class="setting-label">Referral Code</div><div class="setting-desc" style="font-family:monospace;color:var(--green);font-size:1em;">{{ user.referral_code }}</div></div>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('{{ user.referral_code }}');this.textContent='✓ Copied!'">📋 Copy</button>
+      <div><div class="setting-label">Referral Code</div><div class="setting-desc" style="font-family:monospace;color:var(--green);">{{ user.referral_code }}</div></div>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('{{ user.referral_code }}');this.textContent='✓'">📋</button>
     </div>
     <div class="setting-row">
       <div><div class="setting-label">Network</div></div>
       <span style="color:var(--orange);font-size:0.875em;">NYN Testnet</span>
     </div>
   </div>
-</div>
-""" + FOOTER + """</body></html>"""
+</div>""" + FOOTER + """</body></html>"""
+
+SETUP_2FA_HTML = """<!DOCTYPE html><html><head><title>Setup 2FA - NYN</title>""" + STYLES + """
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head><body>""" + NAV_IN + """
+<div class="form-page"><div class="form-card">
+  <h2>🔐 Setup 2FA</h2>
+  <p class="sub">Scan QR code with Google Authenticator</p>
+  {% if msg %}<div class="alert error">{{ msg }}</div>{% endif %}
+  <div class="alert info" style="margin-bottom:16px;">1. Download Google Authenticator app<br>2. Scan the QR code below<br>3. Enter the 6-digit code to confirm</div>
+  <div class="qr-2fa"><div id="qr2fa"></div></div>
+  <div style="text-align:center;margin-bottom:16px;">
+    <div style="font-size:0.8em;color:var(--text2);margin-bottom:6px;">Manual entry key:</div>
+    <code style="background:var(--bg);padding:8px 12px;border-radius:6px;font-size:0.85em;color:var(--orange);">{{ secret }}</code>
+  </div>
+  <form method="POST">
+    <div class="fg"><label>Enter 6-digit code from authenticator</label><input type="text" name="token" class="otp-input" placeholder="000000" maxlength="6" required autocomplete="off" autofocus></div>
+    <button type="submit" class="btn-full">Verify & Enable 2FA ⚡</button>
+  </form>
+  <script>new QRCode(document.getElementById("qr2fa"),{text:"{{ qr_uri }}",width:160,height:160,colorDark:"#000",colorLight:"#fff"});</script>
+</div></div></body></html>"""
+
+BACKUP_CODES_HTML = """<!DOCTYPE html><html><head><title>Backup Codes - NYN</title>""" + STYLES + """</head><body>""" + NAV_IN + """
+<div class="form-page"><div class="form-card">
+  <h2>🔐 2FA Enabled!</h2>
+  <p class="sub">Save these backup codes in a safe place</p>
+  <div class="alert warning" style="margin-bottom:16px;">⚠️ These codes can only be used once each. Save them now — they won't be shown again.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;justify-content:center;">
+    {% for code in codes %}
+    <span class="backup-code">{{ code }}</span>
+    {% endfor %}
+  </div>
+  <button onclick="var t=Array.from(document.querySelectorAll('.backup-code')).map(e=>e.textContent).join('\\n');navigator.clipboard.writeText(t);this.textContent='✓ Copied!';" class="btn-outline">📋 Copy All Codes</button>
+  <a href="/settings" class="btn-full" style="display:block;text-align:center;text-decoration:none;margin-top:8px;">I've saved my codes ✓</a>
+</div></div></body></html>"""

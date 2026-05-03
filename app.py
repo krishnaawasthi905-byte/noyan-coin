@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, request, session, redirect, url_for, jsonify
+from flask import Flask, render_template_string, request, session, redirect, url_for, jsonify, make_response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_bcrypt import Bcrypt
@@ -11,12 +11,19 @@ import random
 import string
 import datetime
 import requests
+import qrcode
+import io
+import base64
 from sqlalchemy import create_engine, Column, Integer, String, Float, Text, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
+from security import *
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET", "nyn-secret-2026")
+app.secret_key = os.environ.get("FLASK_SECRET", "nyn-secret-2026-ultra")
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 bcrypt = Bcrypt(app)
 limiter = Limiter(get_remote_address, app=app, default_limits=["200 per day", "20 per minute"])
 
@@ -66,6 +73,8 @@ class UserModel(Base):
     otp_expiry = Column(Float, nullable=True)
     total_sent = Column(Float, default=0.0)
     total_received = Column(Float, default=0.0)
+    total_sent_today = Column(Float, default=0.0)
+    last_tx_date = Column(String(10), nullable=True)
     blocks_validated = Column(Integer, default=0)
     theme = Column(String(10), default="dark")
     language = Column(String(10), default="en")
@@ -73,6 +82,15 @@ class UserModel(Base):
     notif_security = Column(Boolean, default=True)
     privacy_hide_balance = Column(Boolean, default=True)
     privacy_hide_txs = Column(Boolean, default=False)
+    two_fa_secret = Column(String(32), nullable=True)
+    two_fa_enabled = Column(Boolean, default=False)
+    two_fa_backup_codes = Column(Text, nullable=True)
+    login_count = Column(Integer, default=0)
+    last_login = Column(Float, nullable=True)
+    last_login_ip = Column(String(50), nullable=True)
+    tx_pin = Column(String(200), nullable=True)
+    tx_pin_enabled = Column(Boolean, default=False)
+    is_locked = Column(Boolean, default=False)
 
 class TransactionModel(Base):
     __tablename__ = 'transactions'
@@ -93,11 +111,28 @@ class StakeModel(Base):
     wallet_address = Column(String(100))
     amount = Column(Float)
     staked_at = Column(Float)
+    unstake_at = Column(Float, nullable=True)
     is_active = Column(Boolean, default=True)
     rewards_earned = Column(Float, default=0.0)
 
+class LoginHistoryModel(Base):
+    __tablename__ = 'login_history'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer)
+    ip_address = Column(String(50))
+    user_agent = Column(String(200))
+    timestamp = Column(Float)
+    success = Column(Boolean, default=True)
+
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
+
+@app.after_request
+def add_security_headers(response):
+    headers = get_security_headers()
+    for key, value in headers.items():
+        response.headers[key] = value
+    return response
 
 def calculate_hash(index, timestamp, transactions, previous_hash, validator=""):
     block_string = json.dumps({
@@ -109,35 +144,28 @@ def calculate_hash(index, timestamp, transactions, previous_hash, validator=""):
     }, sort_keys=True)
     return hashlib.sha256(block_string.encode()).hexdigest()
 
-def verify_transaction(sender_address, receiver_address, amount, sender_balance):
+def verify_transaction_security(sender, receiver_addr, amount, sender_balance, user_id):
     errors = []
-    if not receiver_address.startswith("NYN"):
-        errors.append("Invalid NYN address format - must start with NYN")
+    if not validate_nyn_address(receiver_addr):
+        errors.append("Invalid NYN address format")
     if amount <= 0:
         errors.append("Amount must be greater than 0")
     if sender_balance < amount:
         errors.append(f"Insufficient balance. You have {round(sender_balance, 2)} NYN")
-    if sender_address == receiver_address:
+    if sender.wallet_address == receiver_addr:
         errors.append("Cannot send NYN to yourself")
     if amount > 10000:
-        errors.append("Maximum 10,000 NYN per single transaction")
+        errors.append("Maximum 10,000 NYN per transaction")
+    can_tx, wait = check_tx_cooldown(user_id)
+    if not can_tx:
+        errors.append(f"Please wait {wait} seconds before next transaction")
+    today = datetime.date.today().isoformat()
+    if sender.last_tx_date != today:
+        sender.total_sent_today = 0
+        sender.last_tx_date = today
+    if not check_daily_limit(sender, amount):
+        errors.append(f"Daily transaction limit of {DAILY_TX_LIMIT} NYN reached")
     return errors
-
-def select_validator(session_db):
-    validators = session_db.query(UserModel).filter(
-        UserModel.staked_amount >= MIN_STAKE,
-        UserModel.is_verified == True
-    ).order_by(UserModel.staked_amount.desc()).all()
-    if validators:
-        weights = [v.staked_amount for v in validators]
-        total = sum(weights)
-        probs = [w/total for w in weights]
-        chosen = random.choices(validators, weights=probs, k=1)[0]
-        chosen.balance += STAKE_REWARD
-        chosen.blocks_validated += 1
-        session_db.commit()
-        return chosen.wallet_address[:20] + "..."
-    return "NYN-PoS-System"
 
 def get_chain():
     s = Session()
@@ -153,11 +181,9 @@ def add_block(transactions, validator="System"):
     timestamp = time.time()
     h = calculate_hash(index, timestamp, json.dumps(transactions), previous_hash, validator)
     block = BlockModel(
-        index=index,
-        timestamp=timestamp,
+        index=index, timestamp=timestamp,
         transactions=json.dumps(transactions),
-        previous_hash=previous_hash,
-        hash=h,
+        previous_hash=previous_hash, hash=h,
         validator=validator,
         tx_count=1 if isinstance(transactions, dict) else 0
     )
@@ -177,36 +203,43 @@ def generate_wallet():
 def generate_referral_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
-def send_otp_email(email, otp, username="User"):
+def send_email(to_email, subject, html_content):
     try:
         import sendgrid
         from sendgrid.helpers.mail import Mail
         sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
-        html = f"""
-        <div style="background:#0d1117;padding:40px;font-family:monospace;max-width:500px;margin:0 auto;border-radius:12px;border:1px solid #30363d;">
-            <h1 style="color:#00ff88;text-align:center;margin-bottom:4px;">⚡ NYN NoyanCoin</h1>
-            <p style="color:#8b949e;text-align:center;margin-bottom:24px;">Republic of Nowhere</p>
-            <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:24px;text-align:center;margin:16px 0;">
-                <p style="color:#8b949e;margin-bottom:12px;">Hi {username}, your verification code is:</p>
-                <h2 style="color:#00ff88;font-size:2.5em;letter-spacing:12px;margin:0;">{otp}</h2>
-                <p style="color:#8b949e;font-size:0.85em;margin-top:12px;">Expires in 10 minutes</p>
-            </div>
-            <p style="color:#8b949e;text-align:center;font-size:0.8em;">If you did not request this, ignore this email.</p>
-            <p style="color:#8b949e;text-align:center;font-size:0.8em;margin-top:8px;">Republic of Nowhere — Currency of Everywhere</p>
-        </div>
-        """
-        message = Mail(from_email=EMAIL_USER, to_emails=email, subject='⚡ NYN Wallet — Verification Code', html_content=html)
+        message = Mail(from_email=EMAIL_USER, to_emails=to_email, subject=subject, html_content=html_content)
         sg.send(message)
         return True
     except Exception as e:
         print(f"Email error: {e}")
         return False
 
+def send_otp_email(email, otp, username="User"):
+    html = f"""
+    <div style="background:#0d1117;padding:40px;font-family:monospace;max-width:500px;margin:0 auto;border-radius:12px;border:1px solid #30363d;">
+        <h1 style="color:#00ff88;text-align:center;margin-bottom:4px;">⚡ NYN NoyanCoin</h1>
+        <p style="color:#8b949e;text-align:center;margin-bottom:24px;">Republic of Nowhere</p>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:24px;text-align:center;">
+            <p style="color:#8b949e;margin-bottom:12px;">Hi {username}, your verification code:</p>
+            <h2 style="color:#00ff88;font-size:2.5em;letter-spacing:12px;margin:0;">{otp}</h2>
+            <p style="color:#8b949e;font-size:0.85em;margin-top:12px;">Expires in 10 minutes</p>
+        </div>
+        <p style="color:#8b949e;text-align:center;font-size:0.8em;margin-top:16px;">Republic of Nowhere — Currency of Everywhere</p>
+    </div>
+    """
+    return send_email(email, '⚡ NYN Wallet — Verification Code', html)
+
+def send_login_alert(email, username, ip, user_agent):
+    html = format_login_alert(username, ip, user_agent)
+    return send_email(email, '⚠️ NYN Security Alert — New Login Detected', html)
+
 def verify_recaptcha(token):
     if not RECAPTCHA_SECRET_KEY:
         return True
     try:
-        r = requests.post('https://www.google.com/recaptcha/api/siteverify', data={'secret': RECAPTCHA_SECRET_KEY, 'response': token})
+        r = requests.post('https://www.google.com/recaptcha/api/siteverify',
+            data={'secret': RECAPTCHA_SECRET_KEY, 'response': token})
         return r.json().get('success', False)
     except:
         return True
@@ -223,6 +256,22 @@ def get_total_staked():
     total = sum(u.staked_amount for u in users)
     s.close()
     return round(total, 2)
+
+def select_validator(session_db):
+    validators = session_db.query(UserModel).filter(
+        UserModel.staked_amount >= MIN_STAKE,
+        UserModel.is_verified == True
+    ).order_by(UserModel.staked_amount.desc()).all()
+    if validators:
+        weights = [v.staked_amount for v in validators]
+        total = sum(weights)
+        probs = [w/total for w in weights]
+        chosen = random.choices(validators, weights=probs, k=1)[0]
+        chosen.balance += STAKE_REWARD
+        chosen.blocks_validated += 1
+        session_db.commit()
+        return chosen.wallet_address[:20] + "..."
+    return "NYN-PoS-System"
 
 s = Session()
 if s.query(BlockModel).count() == 0:
@@ -248,20 +297,25 @@ def explorer():
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def register():
+    ip = get_client_ip()
+    if is_ip_blocked(ip):
+        mins = get_block_time_remaining(ip)
+        return render_template_string(REGISTER_HTML, msg=f"Too many attempts. Try again in {mins} minutes.", msg_type="error", site_key=RECAPTCHA_SITE_KEY)
     if request.method == 'POST':
         if not verify_recaptcha(request.form.get('g-recaptcha-response', '')):
             return render_template_string(REGISTER_HTML, msg="Please complete the captcha", msg_type="error", site_key=RECAPTCHA_SITE_KEY)
-        username = request.form.get('username', '').strip().lower()
-        email = request.form.get('email', '').strip().lower()
+        username = sanitize_input(request.form.get('username', '').strip().lower(), 30)
+        email = sanitize_input(request.form.get('email', '').strip().lower(), 100)
         password = request.form.get('password', '')
         confirm = request.form.get('confirm', '')
-        referral_input = request.form.get('referral', '').strip().upper()
+        referral_input = sanitize_input(request.form.get('referral', '').strip().upper(), 10)
+        score, strength, feedback = check_password_strength(password)
         if len(username) < 3:
             return render_template_string(REGISTER_HTML, msg="Username must be at least 3 characters", msg_type="error", site_key=RECAPTCHA_SITE_KEY)
+        if strength == "weak":
+            return render_template_string(REGISTER_HTML, msg=f"Password too weak. {', '.join(feedback)}", msg_type="error", site_key=RECAPTCHA_SITE_KEY)
         if password != confirm:
             return render_template_string(REGISTER_HTML, msg="Passwords don't match", msg_type="error", site_key=RECAPTCHA_SITE_KEY)
-        if len(password) < 8:
-            return render_template_string(REGISTER_HTML, msg="Password must be at least 8 characters", msg_type="error", site_key=RECAPTCHA_SITE_KEY)
         s = Session()
         if s.query(UserModel).filter_by(username=username).first():
             s.close()
@@ -284,7 +338,13 @@ def register():
                 bonus += 20.0
                 referred_by = referral_input
                 s.commit()
-        user = UserModel(username=username, email=email, password=hashed, wallet_address=wallet_address, public_key=public_key, created_at=time.time(), balance=bonus, referral_code=referral_code, referral_count=0, referred_by=referred_by, otp=otp, otp_expiry=otp_expiry)
+        user = UserModel(
+            username=username, email=email, password=hashed,
+            wallet_address=wallet_address, public_key=public_key,
+            created_at=time.time(), balance=bonus,
+            referral_code=referral_code, referral_count=0,
+            referred_by=referred_by, otp=otp, otp_expiry=otp_expiry
+        )
         s.add(user)
         s.commit()
         add_block({"event": "new_wallet", "address": wallet_address[:20]+"...", "timestamp": time.time()}, "PoS-System")
@@ -297,7 +357,7 @@ def register():
 @app.route('/verify', methods=['GET', 'POST'])
 def verify_email():
     if request.method == 'POST':
-        otp_input = request.form.get('otp', '').strip()
+        otp_input = sanitize_input(request.form.get('otp', '').strip(), 6)
         user_id = session.get('pending_user_id') or session.get('user_id')
         if not user_id:
             return redirect(url_for('login'))
@@ -320,6 +380,7 @@ def verify_email():
     return render_template_string(VERIFY_HTML, msg=None)
 
 @app.route('/resend-otp')
+@limiter.limit("3 per minute")
 def resend_otp():
     user_id = session.get('pending_user_id') or session.get('user_id')
     if user_id:
@@ -337,22 +398,61 @@ def resend_otp():
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit("10 per minute")
 def login():
+    ip = get_client_ip()
+    if is_ip_blocked(ip):
+        mins = get_block_time_remaining(ip)
+        return render_template_string(LOGIN_HTML, msg=f"Account locked. Try again in {mins} minutes.", attempts=0)
     if request.method == 'POST':
-        username = request.form.get('username', '').strip().lower()
+        username = sanitize_input(request.form.get('username', '').strip().lower(), 50)
         password = request.form.get('password', '')
+        two_fa_code = request.form.get('two_fa_code', '').strip()
         s = Session()
         user = s.query(UserModel).filter_by(username=username).first()
+        if not user or not bcrypt.check_password_hash(user.password, password):
+            blocked = record_failed_attempt(ip)
+            remaining = get_attempts_remaining(ip)
+            s.close()
+            if blocked:
+                return render_template_string(LOGIN_HTML, msg=f"Too many failed attempts. Account locked for 30 minutes.", attempts=0)
+            return render_template_string(LOGIN_HTML, msg=f"Invalid credentials. {remaining} attempts remaining.", attempts=remaining)
+        if user.is_locked:
+            s.close()
+            return render_template_string(LOGIN_HTML, msg="Account is locked. Contact support.", attempts=0)
+        if user.two_fa_enabled:
+            if not two_fa_code:
+                s.close()
+                return render_template_string(LOGIN_HTML, msg="Please enter your 2FA code", attempts=5, show_2fa=True, username=username)
+            if not verify_totp(user.two_fa_secret, two_fa_code):
+                backup_codes = json.loads(user.two_fa_backup_codes or '[]')
+                if two_fa_code in backup_codes:
+                    backup_codes.remove(two_fa_code)
+                    user.two_fa_backup_codes = json.dumps(backup_codes)
+                    s.commit()
+                else:
+                    s.close()
+                    return render_template_string(LOGIN_HTML, msg="Invalid 2FA code", attempts=5, show_2fa=True, username=username)
+        clear_attempts(ip)
+        login_record = LoginHistoryModel(
+            user_id=user.id, ip_address=ip,
+            user_agent=request.user_agent.string[:200],
+            timestamp=time.time(), success=True
+        )
+        s.add(login_record)
+        user.login_count += 1
+        user.last_login = time.time()
+        user.last_login_ip = ip
+        s.commit()
+        if user.notif_security and user.last_login:
+            send_login_alert(user.email, user.username, ip, request.user_agent.string)
+        session.permanent = True
+        session['user_id'] = user.id
+        session['username'] = user.username
         s.close()
-        if user and bcrypt.check_password_hash(user.password, password):
-            session.permanent = True
-            session['user_id'] = user.id
-            session['username'] = user.username
-            if not user.is_verified:
-                session['pending_user_id'] = user.id
-                return redirect(url_for('verify_email'))
-            return redirect(url_for('wallet'))
-        return render_template_string(LOGIN_HTML, msg="Invalid username or password")
-    return render_template_string(LOGIN_HTML, msg=None)
+        if not user.is_verified:
+            session['pending_user_id'] = user.id
+            return redirect(url_for('verify_email'))
+        return redirect(url_for('wallet'))
+    return render_template_string(LOGIN_HTML, msg=None, attempts=MAX_ATTEMPTS)
 
 @app.route('/wallet')
 def wallet():
@@ -365,27 +465,34 @@ def wallet():
         (TransactionModel.receiver == user.wallet_address)
     ).order_by(TransactionModel.timestamp.desc()).limit(10).all()
     stake = s.query(StakeModel).filter_by(user_id=user.id, is_active=True).first()
+    login_history = s.query(LoginHistoryModel).filter_by(user_id=user.id).order_by(LoginHistoryModel.timestamp.desc()).limit(5).all()
     s.close()
-    tx_list = [{"sender": t.sender, "receiver": t.receiver, "amount": t.amount, "time": datetime.datetime.fromtimestamp(t.timestamp).strftime('%b %d, %H:%M'), "type": "in" if t.receiver == user.wallet_address else "out"} for t in txns]
+    tx_list = [{"sender": t.sender, "receiver": t.receiver, "amount": t.amount, "time": datetime.datetime.fromtimestamp(t.timestamp).strftime('%b %d, %H:%M'), "type": "in" if t.receiver == user.wallet_address else "out", "hash": t.tx_hash} for t in txns]
     created = datetime.datetime.fromtimestamp(user.created_at).strftime('%b %d, %Y')
     msg = request.args.get('msg', None)
     msg_type = request.args.get('msg_type', 'success')
-    stake_info = {"amount": stake.amount, "rewards": round(stake.rewards_earned, 4)} if stake else None
-    return render_template_string(WALLET_HTML, user=user, transactions=tx_list, created_at=created, msg=msg, msg_type=msg_type, stake_info=stake_info, min_stake=MIN_STAKE)
+    stake_info = {"amount": stake.amount, "rewards": round(stake.rewards_earned, 4), "staked_at": datetime.datetime.fromtimestamp(stake.staked_at).strftime('%b %d, %Y')} if stake else None
+    logins = [{"ip": l.ip_address, "time": datetime.datetime.fromtimestamp(l.timestamp).strftime('%b %d, %H:%M'), "success": l.success} for l in login_history]
+    return render_template_string(WALLET_HTML, user=user, transactions=tx_list, created_at=created, msg=msg, msg_type=msg_type, stake_info=stake_info, min_stake=MIN_STAKE, logins=logins)
 
 @app.route('/send', methods=['POST'])
 @limiter.limit("10 per minute")
 def send_nyn():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    receiver_addr = request.form.get('receiver', '').strip()
+    receiver_addr = sanitize_input(request.form.get('receiver', '').strip(), 35)
     try:
         amount = float(request.form.get('amount', 0))
     except:
         return redirect(url_for('wallet') + '?msg=Invalid+amount&msg_type=error')
+    tx_pin_input = request.form.get('tx_pin', '')
     s = Session()
     sender = s.query(UserModel).filter_by(id=session['user_id']).first()
-    errors = verify_transaction(sender.wallet_address, receiver_addr, amount, sender.balance)
+    if sender.tx_pin_enabled and tx_pin_input:
+        if not bcrypt.check_password_hash(sender.tx_pin, tx_pin_input):
+            s.close()
+            return redirect(url_for('wallet') + '?msg=Invalid+transaction+PIN&msg_type=error')
+    errors = verify_transaction_security(sender, receiver_addr, amount, sender.balance, session['user_id'])
     if errors:
         s.close()
         return redirect(url_for('wallet') + '?msg=' + requests.utils.quote(errors[0]) + '&msg_type=error')
@@ -396,12 +503,19 @@ def send_nyn():
     sender.balance -= amount
     receiver.balance += amount
     sender.total_sent += amount
+    sender.total_sent_today += amount
+    sender.last_tx_date = datetime.date.today().isoformat()
     receiver.total_received += amount
-    tx_hash = hashlib.sha256(f"{sender.wallet_address}{receiver_addr}{amount}{time.time()}".encode()).hexdigest()
+    tx_hash = hashlib.sha256(f"{sender.wallet_address}{receiver_addr}{amount}{time.time()}{os.urandom(8).hex()}".encode()).hexdigest()
     validator = select_validator(s)
-    tx = TransactionModel(sender=sender.wallet_address, receiver=receiver_addr, amount=amount, timestamp=time.time(), tx_hash=tx_hash, status="confirmed", block_index=len(get_chain()))
+    tx = TransactionModel(
+        sender=sender.wallet_address, receiver=receiver_addr,
+        amount=amount, timestamp=time.time(), tx_hash=tx_hash,
+        status="confirmed", block_index=len(get_chain())
+    )
     s.add(tx)
     s.commit()
+    set_tx_cooldown(session['user_id'])
     add_block({"tx": tx_hash[:20]+"...", "amount": amount, "from": sender.wallet_address[:16]+"...", "to": receiver_addr[:16]+"..."}, validator)
     s.close()
     return redirect(url_for('wallet') + f'?msg=Successfully+sent+{amount}+NYN&msg_type=success')
@@ -421,11 +535,11 @@ def stake_nyn():
     user = s.query(UserModel).filter_by(id=session['user_id']).first()
     if user.balance < amount:
         s.close()
-        return redirect(url_for('wallet') + '?msg=Insufficient+balance+to+stake&msg_type=error')
-    existing_stake = s.query(StakeModel).filter_by(user_id=user.id, is_active=True).first()
-    if existing_stake:
+        return redirect(url_for('wallet') + '?msg=Insufficient+balance&msg_type=error')
+    existing = s.query(StakeModel).filter_by(user_id=user.id, is_active=True).first()
+    if existing:
         s.close()
-        return redirect(url_for('wallet') + '?msg=You+already+have+an+active+stake&msg_type=error')
+        return redirect(url_for('wallet') + '?msg=Already+have+active+stake&msg_type=error')
     user.balance -= amount
     user.staked_amount += amount
     stake = StakeModel(user_id=user.id, wallet_address=user.wallet_address, amount=amount, staked_at=time.time())
@@ -444,13 +558,80 @@ def unstake_nyn():
     stake = s.query(StakeModel).filter_by(user_id=user.id, is_active=True).first()
     if not stake:
         s.close()
-        return redirect(url_for('wallet') + '?msg=No+active+stake+found&msg_type=error')
+        return redirect(url_for('wallet') + '?msg=No+active+stake&msg_type=error')
+    staked_hours = (time.time() - stake.staked_at) / 3600
+    if staked_hours < 24:
+        hours_left = int(24 - staked_hours)
+        s.close()
+        return redirect(url_for('wallet') + f'?msg=Cannot+unstake+yet.+{hours_left}+hours+remaining&msg_type=error')
     user.balance += stake.amount
     user.staked_amount -= stake.amount
     stake.is_active = False
+    stake.unstake_at = time.time()
     s.commit()
     s.close()
-    return redirect(url_for('wallet') + '?msg=Successfully+unstaked+NYN&msg_type=success')
+    return redirect(url_for('wallet') + '?msg=Successfully+unstaked&msg_type=success')
+
+@app.route('/setup-2fa', methods=['GET', 'POST'])
+def setup_2fa():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    s = Session()
+    user = s.query(UserModel).filter_by(id=session['user_id']).first()
+    if request.method == 'POST':
+        token = request.form.get('token', '').strip()
+        secret = session.get('temp_2fa_secret')
+        if not secret:
+            s.close()
+            return redirect(url_for('setup_2fa'))
+        if verify_totp(secret, token):
+            backup_codes = generate_backup_codes()
+            user.two_fa_secret = secret
+            user.two_fa_enabled = True
+            user.two_fa_backup_codes = json.dumps(backup_codes)
+            s.commit()
+            s.close()
+            session.pop('temp_2fa_secret', None)
+            return render_template_string(BACKUP_CODES_HTML, codes=backup_codes)
+        s.close()
+        return render_template_string(SETUP_2FA_HTML, msg="Invalid code. Try again.", secret=secret, qr_uri=get_totp_uri(secret, user.username))
+    secret = generate_totp_secret()
+    session['temp_2fa_secret'] = secret
+    qr_uri = get_totp_uri(secret, user.username)
+    s.close()
+    return render_template_string(SETUP_2FA_HTML, msg=None, secret=secret, qr_uri=qr_uri)
+
+@app.route('/disable-2fa', methods=['POST'])
+def disable_2fa():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    password = request.form.get('password', '')
+    s = Session()
+    user = s.query(UserModel).filter_by(id=session['user_id']).first()
+    if bcrypt.check_password_hash(user.password, password):
+        user.two_fa_enabled = False
+        user.two_fa_secret = None
+        user.two_fa_backup_codes = None
+        s.commit()
+        s.close()
+        return redirect(url_for('settings') + '?msg=2FA+disabled&msg_type=success')
+    s.close()
+    return redirect(url_for('settings') + '?msg=Incorrect+password&msg_type=error')
+
+@app.route('/set-tx-pin', methods=['POST'])
+def set_tx_pin():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    pin = request.form.get('tx_pin', '')
+    if len(pin) != 6 or not pin.isdigit():
+        return redirect(url_for('settings') + '?msg=PIN+must+be+6+digits&msg_type=error')
+    s = Session()
+    user = s.query(UserModel).filter_by(id=session['user_id']).first()
+    user.tx_pin = bcrypt.generate_password_hash(pin).decode('utf-8')
+    user.tx_pin_enabled = True
+    s.commit()
+    s.close()
+    return redirect(url_for('settings') + '?msg=Transaction+PIN+set&msg_type=success')
 
 @app.route('/profile')
 def profile():
@@ -458,11 +639,13 @@ def profile():
         return redirect(url_for('login'))
     s = Session()
     user = s.query(UserModel).filter_by(id=session['user_id']).first()
+    login_history = s.query(LoginHistoryModel).filter_by(user_id=user.id).order_by(LoginHistoryModel.timestamp.desc()).limit(10).all()
     s.close()
     created = datetime.datetime.fromtimestamp(user.created_at).strftime('%b %d, %Y')
+    logins = [{"ip": l.ip_address, "time": datetime.datetime.fromtimestamp(l.timestamp).strftime('%b %d, %H:%M'), "success": l.success} for l in login_history]
     msg = request.args.get('msg', None)
     msg_type = request.args.get('msg_type', 'success')
-    return render_template_string(PROFILE_HTML, user=user, created_at=created, msg=msg, msg_type=msg_type)
+    return render_template_string(PROFILE_HTML, user=user, created_at=created, logins=logins, msg=msg, msg_type=msg_type)
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
@@ -473,9 +656,9 @@ def settings():
     if request.method == 'POST':
         action = request.form.get('action')
         if action == 'theme':
-            user.theme = request.form.get('theme', 'dark')
+            user.theme = sanitize_input(request.form.get('theme', 'dark'), 10)
         elif action == 'language':
-            user.language = request.form.get('language', 'en')
+            user.language = sanitize_input(request.form.get('language', 'en'), 10)
         elif action == 'notifications':
             user.notif_tx = 'notif_tx' in request.form
             user.notif_security = 'notif_security' in request.form
@@ -498,6 +681,7 @@ def change_password():
     current = request.form.get('current_password', '')
     new_pwd = request.form.get('new_password', '')
     confirm = request.form.get('confirm_password', '')
+    score, strength, feedback = check_password_strength(new_pwd)
     s = Session()
     user = s.query(UserModel).filter_by(id=session['user_id']).first()
     if not bcrypt.check_password_hash(user.password, current):
@@ -506,17 +690,18 @@ def change_password():
     if new_pwd != confirm:
         s.close()
         return redirect(url_for('settings') + '?msg=Passwords+do+not+match&msg_type=error')
-    if len(new_pwd) < 8:
+    if strength == "weak":
         s.close()
-        return redirect(url_for('settings') + '?msg=Password+must+be+8+characters&msg_type=error')
+        return redirect(url_for('settings') + f'?msg=Password+too+weak&msg_type=error')
     user.password = bcrypt.generate_password_hash(new_pwd).decode('utf-8')
     s.commit()
+    send_email(user.email, '⚠️ NYN — Password Changed', f'<p style="font-family:monospace;color:#e6edf3;background:#0d1117;padding:20px;border-radius:8px;">Your NYN password was changed. If this wasn\'t you, contact support immediately.</p>')
     s.close()
     return redirect(url_for('settings') + '?msg=Password+updated&msg_type=success')
 
 @app.route('/search')
 def search():
-    q = request.args.get('q', '').strip()
+    q = sanitize_input(request.args.get('q', '').strip(), 100)
     s = Session()
     block = s.query(BlockModel).filter_by(hash=q).first()
     user = s.query(UserModel).filter_by(wallet_address=q).first()
@@ -537,7 +722,7 @@ def logout():
 def add(secret, data):
     if secret != NYN_SECRET:
         return jsonify({"error": "Unauthorized"}), 403
-    add_block({"data": data, "timestamp": time.time()}, "Founder")
+    add_block({"data": sanitize_input(data, 100), "timestamp": time.time()}, "Founder")
     return jsonify({"message": "Block added!", "blocks": len(get_chain())})
 
 if __name__ == '__main__':
