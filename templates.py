@@ -209,7 +209,7 @@ FOOTER = """
 """
 
 MAIN_HTML = """<!DOCTYPE html><html><head><title>NYN Explorer - NoyanCoin Blockchain</title>""" + STYLES + """</head><body>
-""" + NAV_OUT + """
+{% if logged_in %}""" + NAV_IN + """{% else %}""" + NAV_OUT + """{% endif %}
 <div class="hero">
   <div class="container">
     <h1>⚡ <span>NYN</span> Blockchain Explorer</h1>
